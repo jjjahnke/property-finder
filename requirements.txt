@@ -4,3 +4,8 @@ psycopg2-binary
 pika
 sqlalchemy
 alembic
+geopandas
+tabulate
+fiona
+geoalchemy2
+requests
