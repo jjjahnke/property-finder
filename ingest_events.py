@@ -156,6 +156,38 @@ def ingest_events():
         full_df['STATEID'] = full_df['FIPS'] + full_df['parcel_id']
         logging.info("STATEID re-construction complete.")
 
+    # --- Advanced Parcel ID Matching ---
+    try:
+        engine = create_engine(DATABASE_URL)
+        with engine.connect() as connection:
+            result = connection.execute(text('SELECT DISTINCT "PARCELID" FROM properties;'))
+            valid_parcel_ids = [row[0] for row in result if row[0] and not row[0].isalpha()]
+        
+        orphan_to_canonical = {}
+        for valid_id in valid_parcel_ids:
+            if '-' not in valid_id:
+                continue
+            parts = valid_id.split('-')
+            for part in parts:
+                if not part.isdigit():
+                    continue
+                if part not in orphan_to_canonical:
+                    orphan_to_canonical[part] = valid_id
+        
+        logging.info(f"Applying {len(orphan_to_canonical)} local parcel ID mappings...")
+        # Apply the mapping to the 'parcel_id' column before constructing the STATEID
+        full_df['parcel_id'] = full_df['parcel_id'].map(orphan_to_canonical).fillna(full_df['parcel_id'])
+        logging.info("Local parcel ID mapping complete.")
+
+    except Exception as e:
+        logging.error(f"Failed during advanced parcel ID matching: {e}")
+        return
+    
+    # --- Re-construct STATEID after mapping ---
+    if 'FIPS' in full_df.columns:
+        full_df['STATEID'] = full_df['FIPS'] + full_df['parcel_id']
+        logging.info("STATEID re-construction complete.")
+
     # Convert date columns
     date_cols = ['DateRecorded', 'DateConveyed', 'event_date', 'CertificationDate', 'GranteeCertificationDate']
     for col in date_cols:

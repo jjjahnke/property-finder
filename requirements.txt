@@ -9,3 +9,5 @@ tabulate
 fiona
 geoalchemy2
 requests
+fuzzywuzzy
+python-Levenshtein
