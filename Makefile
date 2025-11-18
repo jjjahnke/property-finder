@@ -61,8 +61,12 @@ match-parcels:
 	@echo "Running parcel matching script with LLM in Docker..."
 	docker-compose run --rm backend python scripts/match_parcels_llm.py
 
+validate-stateid:
+	@echo "Running STATEID validation script in Docker..."
+	docker-compose run --rm backend python scripts/validate_stateid.py
+
 # Phony targets
-.PHONY: all up down logs backend test migrate ingest-geo ingest-events match-parcels
+.PHONY: all up down logs backend test migrate ingest-geo ingest-events match-parcels validate-stateid
 	@echo "Discovering geospatial data columns..."
 	docker-compose run --rm backend python scripts/discover_geo_columns.py
 

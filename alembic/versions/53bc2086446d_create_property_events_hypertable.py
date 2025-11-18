@@ -26,6 +26,7 @@ def upgrade() -> None:
         'properties',
         sa.Column('id', sa.Integer(), nullable=False),
         # Core Identifiers
+        sa.Column('synthetic_stateid', sa.Text(), nullable=True),
         sa.Column('STATEID', sa.Text(), nullable=True),
         sa.Column('PARCELID', sa.Text(), nullable=False),
         sa.Column('TAXPARCELID', sa.Text(), nullable=True),
@@ -85,12 +86,14 @@ def upgrade() -> None:
         sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('NOW()'), nullable=True),
         sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('NOW()'), nullable=True),
         sa.PrimaryKeyConstraint('id'),
-        sa.UniqueConstraint('STATEID')
+        sa.UniqueConstraint('synthetic_stateid')
     )
+    op.create_index(op.f('ix_properties_synthetic_stateid'), 'properties', ['synthetic_stateid'], unique=False)
+
     op.create_table(
         'property_events',
         sa.Column('event_id', sa.Integer(), nullable=False),
-        sa.Column('STATEID', sa.Text(), nullable=False), # Foreign key to properties.STATEID
+        sa.Column('synthetic_stateid', sa.Text(), nullable=False), # Foreign key to properties.synthetic_stateid
         sa.Column('event_type', sa.String(length=50), nullable=False),
         sa.Column('event_date', sa.DateTime(timezone=True), nullable=False),
         sa.Column('source', sa.String(length=255), nullable=True),
@@ -188,12 +191,13 @@ def upgrade() -> None:
         sa.PrimaryKeyConstraint('event_id', 'event_date')
     )
     op.execute("SELECT create_hypertable('property_events', 'event_date');")
-    op.create_foreign_key('fk_property_events_stateid', 'property_events', 'properties', ['STATEID'], ['STATEID'])
+    op.create_foreign_key('fk_property_events_synthetic_stateid', 'property_events', 'properties', ['synthetic_stateid'], ['synthetic_stateid'])
 
 
 def downgrade() -> None:
     """Downgrade schema."""
-    op.drop_constraint('fk_property_events_parcel_id', 'property_events', type_='foreignkey')
+    op.drop_constraint('fk_property_events_synthetic_stateid', 'property_events', type_='foreignkey')
+    op.drop_index(op.f('ix_properties_synthetic_stateid'), table_name='properties')
     op.drop_table('property_events')
     op.drop_table('properties')
     op.execute("DROP EXTENSION IF EXISTS postgis;")

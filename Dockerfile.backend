@@ -1,10 +1,22 @@
-FROM python:3.9-slim-buster
+FROM python:3.9-slim-bullseye
 
 WORKDIR /app
 
+# Install system dependencies for geospatial libraries
+RUN apt-get update && apt-get install -y \
+    libgdal-dev \
+    gdal-bin \
+    build-essential \
+    # Clean up apt cache to reduce image size
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Python dependencies directly into the container's Python environment
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
+# Copy the rest of the application code
 COPY . .
 
-CMD ["python", "app.py"] # Placeholder command
+# Set the default command to run the application
+CMD ["python", "app.py"]
+
