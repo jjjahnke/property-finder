@@ -28,7 +28,7 @@ def upgrade() -> None:
         # Core Identifiers
         sa.Column('synthetic_stateid', sa.Text(), nullable=True),
         sa.Column('STATEID', sa.Text(), nullable=True),
-        sa.Column('PARCELID', sa.Text(), nullable=False),
+        sa.Column('PARCELID', sa.Text(), nullable=True),
         sa.Column('TAXPARCELID', sa.Text(), nullable=True),
         sa.Column('PARCELDATE', sa.Date(), nullable=True),
         sa.Column('TAXROLLYEAR', sa.Numeric(), nullable=True),
@@ -93,7 +93,7 @@ def upgrade() -> None:
     op.create_table(
         'property_events',
         sa.Column('event_id', sa.Integer(), nullable=False),
-        sa.Column('synthetic_stateid', sa.Text(), nullable=False), # Foreign key to properties.synthetic_stateid
+        sa.Column('raw_parcel_identification', sa.Text(), nullable=True),
         sa.Column('event_type', sa.String(length=50), nullable=False),
         sa.Column('event_date', sa.DateTime(timezone=True), nullable=False),
         sa.Column('source', sa.String(length=255), nullable=True),
@@ -191,12 +191,10 @@ def upgrade() -> None:
         sa.PrimaryKeyConstraint('event_id', 'event_date')
     )
     op.execute("SELECT create_hypertable('property_events', 'event_date');")
-    op.create_foreign_key('fk_property_events_synthetic_stateid', 'property_events', 'properties', ['synthetic_stateid'], ['synthetic_stateid'])
 
 
 def downgrade() -> None:
     """Downgrade schema."""
-    op.drop_constraint('fk_property_events_synthetic_stateid', 'property_events', type_='foreignkey')
     op.drop_index(op.f('ix_properties_synthetic_stateid'), table_name='properties')
     op.drop_table('property_events')
     op.drop_table('properties')

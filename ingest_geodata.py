@@ -4,8 +4,6 @@ import pandas as pd
 from sqlalchemy import create_engine
 import sqlalchemy as sa
 import logging
-import zipfile
-import glob
 
 # --- Configuration ---
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -24,16 +22,13 @@ TARGET_CRS = 'EPSG:4326' # WGS 84
 
 # --- Main Ingestion Logic ---
 
-def find_gdb_zip_path():
-    """Finds the first file ending with 'GDB.zip' in the data directory."""
-    search_pattern = os.path.join(DATA_DIR, '*GDB.zip')
-    zip_files = glob.glob(search_pattern)
-    if not zip_files:
-        logging.error(f"No '*GDB.zip' file found in {DATA_DIR}")
+def find_gdb_path():
+    """Finds the specific statewide GDB directory."""
+    statewide_gdb_dir = os.path.join(DATA_DIR, 'V11.0.0_Wisconsin_Parcels_2025_10.3_Uncompressed.gdb')
+    if not os.path.exists(statewide_gdb_dir):
+        logging.error(f"Statewide GDB directory not found: {statewide_gdb_dir}")
         return None
-    if len(zip_files) > 1:
-        logging.warning(f"Multiple GDB.zip files found. Using the first one: {zip_files[0]}")
-    return zip_files[0]
+    return statewide_gdb_dir
 
 def create_synthetic_stateid(row):
     """
@@ -58,26 +53,25 @@ def create_synthetic_stateid(row):
 
 def ingest_geodata():
     """
-    Reads geospatial data from a GDB.zip file, transforms it, and loads it
+    Reads geospatial data from a GDB directory, transforms it, and loads it
     into the 'properties' table in the PostGIS-enabled database.
     """
-    logging.info("Starting geospatial data ingestion...")
+    logging.info("Starting statewide geospatial data ingestion...")
 
-    gdb_zip_path = find_gdb_zip_path()
-    if not gdb_zip_path:
+    gdb_path = find_gdb_path()
+    if not gdb_path:
         return
 
-    logging.info(f"Found GDB zip file: {gdb_zip_path}")
+    logging.info(f"Found statewide GDB directory: {gdb_path}")
 
     try:
-        gdb_uri = f"zip://{gdb_zip_path}"
-        logging.info(f"Reading geodata from: {gdb_uri}")
-        gdf = gpd.read_file(gdb_uri)
+        logging.info(f"Reading geodata from: {gdb_path}")
+        gdf = gpd.read_file(gdb_path)
         logging.info(f"Successfully read {len(gdf)} features.")
         logging.info(f"Original CRS: {gdf.crs}")
 
     except Exception as e:
-        logging.error(f"Failed to read geodatabase file: {e}")
+        logging.error(f"Failed to read geodatabase directory: {e}")
         return
 
     # --- Data Transformation ---
@@ -100,8 +94,6 @@ def ingest_geodata():
     logging.info("Creating synthetic_stateid...")
     gdf['synthetic_stateid'] = gdf.apply(create_synthetic_stateid, axis=1)
     logging.info("Finished creating synthetic_stateid.")
-    
-
     
     # Log records where synthetic_stateid is null
     null_synthetic_ids = gdf[gdf['synthetic_stateid'].isnull()]
@@ -161,3 +153,4 @@ def ingest_geodata():
 
 if __name__ == "__main__":
     ingest_geodata()
+
