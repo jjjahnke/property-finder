@@ -8,9 +8,9 @@ all: setup
 
 setup: .venv/bin/activate
 
-run: .venv/bin/activate
-	@echo "Running the application (placeholder)"
-	# ./venv/bin/uvicorn app.main:app --reload
+run-api: .venv/bin/activate
+	@echo "Running the FastAPI application..."
+	./.venv/bin/uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 
 
 test: .venv/bin/activate

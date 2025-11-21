@@ -11,3 +11,4 @@ geoalchemy2
 requests
 fuzzywuzzy
 python-Levenshtein
+pydantic
