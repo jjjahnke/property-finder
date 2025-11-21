@@ -13,3 +13,4 @@ fuzzywuzzy
 python-Levenshtein
 pydantic
 pydantic-settings
+shapely

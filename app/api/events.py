@@ -1,15 +1,19 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from app.db.session import get_db
-from app.models.event import PropertyEvent
-import datetime
+from app.models.event import PropertyEvent as PydanticPropertyEvent
+from app.db.models import PropertyEvent as SQLAlchemyPropertyEvent
 
 router = APIRouter()
 
-@router.get("/{event_id}", response_model=PropertyEvent)
+
+@router.get("/{event_id}", response_model=PydanticPropertyEvent)
 def read_event(event_id: int, db: Session = Depends(get_db)):
-    # Placeholder for database logic
-    db_event = {"id": event_id, "property_id": 1, "event_type": "sale", "event_date": datetime.datetime.now()} # Replace with actual DB query
+    db_event = (
+        db.query(SQLAlchemyPropertyEvent)
+        .filter(SQLAlchemyPropertyEvent.event_id == event_id)
+        .first()
+    )
     if db_event is None:
         raise HTTPException(status_code=404, detail="Event not found")
     return db_event

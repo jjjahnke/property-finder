@@ -1,7 +1,9 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 from typing import Optional
 from datetime import date
 from decimal import Decimal
+from geoalchemy2.shape import to_shape
+from geoalchemy2.elements import WKBElement
 
 class Property(BaseModel):
     id: int
@@ -53,5 +55,13 @@ class Property(BaseModel):
     Shape_Area: Optional[float] = None
     geom: Optional[str] = None
 
+    @field_validator('geom', mode='before')
+    def wkb_to_wkt(cls, v):
+        if isinstance(v, WKBElement):
+            return to_shape(v).wkt
+        return v
+
     class Config:
         from_attributes = True
+        arbitrary_types_allowed = True
+
