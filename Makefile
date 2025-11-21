@@ -14,8 +14,9 @@ run-api: .venv/bin/activate
 
 
 test: .venv/bin/activate
-	@echo "Running tests (placeholder)"
-	# ./venv/bin/pytest
+	@echo "Running tests..."
+	sleep 5
+	./.venv/bin/pytest
 
 lint: .venv/bin/activate
 	@echo "Linting code (placeholder)"
