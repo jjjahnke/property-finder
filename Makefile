@@ -27,21 +27,56 @@ lint: .venv/bin/activate
 # ==============================================================================
 
 up:
-	@echo "Starting Docker services"
+	@echo "Starting Docker services..."
 	docker-compose up -d
 
 down:
-	@echo "Stopping and removing Docker services"
+	@echo "Stopping and removing Docker services..."
 	docker-compose down -v
 
 migrate: .venv/bin/activate
-	@echo "Applying database migrations"
+	@echo "Waiting for database to start..."
+	sleep 5
+	@echo "Applying database migrations..."
 	./.venv/bin/alembic upgrade head
 
 revision: .venv/bin/activate
 	@[ -z "$(m)" ] && echo "Usage: make revision m=\"your migration message\"" && exit 1 || \
 	echo "Creating new migration: $(m)"
 	./.venv/bin/alembic revision -m "$(m)"
+
+build:
+	@echo "Building Docker images..."
+	docker-compose build
+
+ingest-geo:
+	@echo "Running geospatial data ingestion script in Docker..."
+	docker-compose run --rm backend python ingest_geodata.py
+
+ingest-events:
+	@echo "Running event data ingestion script in Docker..."
+	docker-compose run --rm backend python ingest_events.py
+
+match-parcels:
+	@echo "Running parcel matching script with LLM in Docker..."
+	docker-compose run --rm backend python scripts/match_parcels_llm.py
+
+validate-stateid:
+	@echo "Running STATEID validation script in Docker..."
+	docker-compose run --rm backend python scripts/validate_stateid.py
+
+# Phony targets
+.PHONY: all up down logs backend test migrate ingest-geo ingest-events match-parcels validate-stateid
+	@echo "Discovering geospatial data columns..."
+	docker-compose run --rm backend python scripts/discover_geo_columns.py
+
+discover-event-columns:
+	@echo "Discovering event data columns..."
+	docker-compose run --rm backend python scripts/discover_event_columns.py
+
+verify-file-completeness:
+	@echo "Verifying event file completeness..."
+	docker-compose run --rm backend python scripts/verify_file_completeness.py
 
 # ==============================================================================
 # Setup & Cleanup

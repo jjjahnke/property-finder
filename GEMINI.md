@@ -23,3 +23,8 @@
 
 ## Documentation
 - The `README.md` file will be kept up-to-date to reflect the current state of the project, its architecture, and its operational procedures as we complete major features or phases.
+
+## Scripts and Tools
+- For exploratory tasks, data discovery, or one-off utilities, we will create scripts in a dedicated `scripts/` directory.
+- These scripts are not considered part of the core application logic but are valuable tools for development.
+- We will decide together at a later time whether to keep, formalize, or delete these scripts.
