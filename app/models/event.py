@@ -1,13 +1,103 @@
 from pydantic import BaseModel
 from typing import Optional
-from datetime import datetime
+from datetime import datetime, date
+from decimal import Decimal
 
 class PropertyEvent(BaseModel):
-    id: int
-    property_id: int
+    event_id: int
+    raw_parcel_identification: Optional[str] = None
     event_type: str
     event_date: datetime
-    details: Optional[dict] = None
+    source: Optional[str] = None
+    SaleNumber: Optional[str] = None
+    YearCaptured: Optional[int] = None
+    GrantorType: Optional[str] = None
+    GrantorGranteeRelationship: Optional[str] = None
+    WeatherStds: Optional[str] = None
+    EnergyExclusion: Optional[str] = None
+    Section: Optional[str] = None
+    Township: Optional[str] = None
+    Range: Optional[str] = None
+    PropertyType: Optional[str] = None
+    PredominateUse: Optional[str] = None
+    MultiFamilyUnits: Optional[int] = None
+    AgrOwnerLessThan5years: Optional[str] = None
+    TotalAcres: Optional[float] = None
+    WaterFrontIndicator: Optional[str] = None
+    TransferType: Optional[str] = None
+    OwnerInterestTransferred: Optional[str] = None
+    GrantorRightsRetained: Optional[str] = None
+    PersPropertyValueExcluded: Optional[Decimal] = None
+    PersPropertyValueExempt: Optional[Decimal] = None
+    TotalRealEstateValue: Optional[Decimal] = None
+    TransferFee: Optional[Decimal] = None
+    TransferExemptionNumber: Optional[str] = None
+    FinancingCode: Optional[str] = None
+    DocumentNumber: Optional[str] = None
+    DateRecorded: Optional[date] = None
+    DateConveyed: Optional[date] = None
+    DeedDate: Optional[date] = None
+    ConveyanceCode: Optional[str] = None
+    ParcelIdentification: Optional[str] = None
+    MultiGrantors: Optional[str] = None
+    GrantorLastName: Optional[str] = None
+    GrantorFirstName: Optional[str] = None
+    GrantorStreetNumber: Optional[str] = None
+    GrantorAddress: Optional[str] = None
+    GrantorCity: Optional[str] = None
+    GrantorState: Optional[str] = None
+    GrantorZip: Optional[str] = None
+    CertificationDate: Optional[date] = None
+    MultiGrantees: Optional[str] = None
+    GranteeLastName: Optional[str] = None
+    GranteeFirstName: Optional[str] = None
+    GranteeStreetNumber: Optional[str] = None
+    GranteeAddress: Optional[str] = None
+    GranteeCity: Optional[str] = None
+    GranteeState: Optional[str] = None
+    GranteeZip: Optional[str] = None
+    GranteeCertificationDate: Optional[date] = None
+    GranteePrimaryResidence: Optional[str] = None
+    TaxBillGrantee: Optional[str] = None
+    CityYN: Optional[str] = None
+    VillageYN: Optional[str] = None
+    TownYN: Optional[str] = None
+    TVCname: Optional[str] = None
+    CountyName: Optional[str] = None
+    PropertyAddress: Optional[str] = None
+    LotSize1: Optional[float] = None
+    LotSize: Optional[float] = None
+    ManagedForestLandAcres: Optional[float] = None
+    VolumeJacket: Optional[str] = None
+    PageImage: Optional[str] = None
+    SplitParcel: Optional[str] = None
+    AgentFor: Optional[str] = None
+    AgentName: Optional[str] = None
+    AgentStreet: Optional[str] = None
+    AgentAddress: Optional[str] = None
+    AgentCity: Optional[str] = None
+    AgentState: Optional[str] = None
+    AgentZip: Optional[str] = None
+    PreparerName: Optional[str] = None
+    GrantorTypeOtherNote: Optional[str] = None
+    GrantorGranteeRelationOther: Optional[str] = None
+    TaxBillName: Optional[str] = None
+    TaxBillStreetNumber: Optional[str] = None
+    TaxBillAddress: Optional[str] = None
+    TaxBillCity: Optional[str] = None
+    TaxBillState: Optional[str] = None
+    TaxBillZip: Optional[str] = None
+    W12documentNumber: Optional[str] = None
+    PropertyTypeOtherNote: Optional[str] = None
+    MiscUseNote: Optional[str] = None
+    TransferTypeOtherNote: Optional[str] = None
+    OwnerInterestOtherNote: Optional[str] = None
+    GrantorRightsOtherNotes: Optional[str] = None
+    PreviousDocumentNumber: Optional[str] = None
+    ConveyanceCodeOtherNote: Optional[str] = None
+    MiscCountyTVC: Optional[str] = None
+    MultiTVSs: Optional[str] = None
+    WaterFrontFeet: Optional[float] = None
 
     class Config:
         from_attributes = True
