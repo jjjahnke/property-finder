@@ -1,0 +1,21 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: migration-job
+  namespace: propfinder
+spec:
+  template:
+    metadata:
+      labels:
+        app: migration
+    spec:
+      imagePullSecrets:
+      - name: regcred
+      restartPolicy: OnFailure
+      containers:
+      - name: migration
+        image: jjjahnke/property-finder-migration:latest
+        imagePullPolicy: Always
+        env:
+        - name: DATABASE_URL
+          value: "postgresql://user:password@postgres-service:5432/property_finder"

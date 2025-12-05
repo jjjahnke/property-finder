@@ -24,9 +24,16 @@ spec:
             - matchExpressions:
               - key: nvidia.com/gpu.present
                 operator: DoesNotExist
+      initContainers:
+      - name: fix-permissions
+        image: busybox
+        command: ["sh", "-c", "chown -R 1000:1000 /var/lib/postgresql/data"]
+        volumeMounts:
+        - name: postgres-storage
+          mountPath: /var/lib/postgresql/data
       containers:
       - name: postgres
-        image: postgis/postgis:15-3.3
+        image: timescale/timescaledb-ha:pg14-latest
         ports:
         - containerPort: 5432
         env:
@@ -41,7 +48,13 @@ spec:
         volumeMounts:
         - name: postgres-storage
           mountPath: /var/lib/postgresql/data
+        - name: pg-hba-config
+          mountPath: /var/lib/postgresql/data/pgdata/pg_hba.conf
+          subPath: pg_hba.conf
       volumes:
       - name: postgres-storage
         persistentVolumeClaim:
           claimName: postgres-pvc
+      - name: pg-hba-config
+        configMap:
+          name: postgres-pg-hba-config

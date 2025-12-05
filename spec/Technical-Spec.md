@@ -1,5 +1,5 @@
 # TECHNICAL SPECIFICATION
-### WI-RE Analysis Platform - v1.0
+### WI-RE Analysis Platform - v1.1
 
 ---
 
@@ -18,31 +18,39 @@ graph TD
     subgraph Core Services
         B --> C[Web Service / UI<br>(Next.js)];
         B --> D[Orchestrator API<br>(Prefect)];
-        B --> E[Query Service<br>(FastAPI)];
+        B --> E[Backend API Service<br>(FastAPI)];
     end
 
     subgraph Data Plane
         F[TimescaleDB<br>(PostgreSQL)]
         G[Message Queue<br>(RabbitMQ)]
+        H[Vector Database<br>(Qdrant)]
     end
 
     subgraph Data Pipeline
-        H[ETL Transformation Service]
-        I[Data Collectors / Workers]
+        I[ETL Transformation Service]
+        J[Data Collectors / Workers]
+        K[Entity Resolution Indexer<br>(GPU Job)]
     end
 
     C -- REST API --> E;
     D -- Triggers Jobs --> G;
     E -- SQL Queries --> F;
+    E -- Vector Search --> H;
+    E -- File Upload (Geodata) --> F;
 
-    G -- Pub/Sub --> H;
     G -- Pub/Sub --> I;
+    G -- Pub/Sub --> J;
 
-    H -- Inserts Events --> F;
-    I -- Publishes Raw Data --> G;
+    I -- Inserts Events --> F;
+    J -- Publishes Raw Data --> G;
+    
+    K -- Embeddings --> H;
+    K -- Reads Properties --> F;
 
     style A fill:#f9f,stroke:#333,stroke-width:2px
     style F fill:#bbf,stroke:#333,stroke-width:2px
+    style H fill:#bbf,stroke:#333,stroke-width:2px
 ```
 
 ### 2. Technology Stack
@@ -52,49 +60,54 @@ graph TD
 | **Backend Services** | Python 3.11+ w/ FastAPI | Modern, high-performance, async-native framework ideal for microservices. |
 | **Frontend Service** | Next.js (React) | A robust framework for building the user-facing chat/analysis interface. |
 | **Database** | TimescaleDB | PostgreSQL with time-series superpowers. Meets the core requirement. |
+| **Vector Database** | Qdrant | High-performance vector search engine for entity resolution. |
 | **Containerization** | Docker | Standard for containerizing applications for local dev and k8s deployment. |
 | **Orchestration** | Kubernetes (K8s) | The target production environment. |
-| **Pipeline Manager** | Prefect | A modern, Python-native workflow orchestrator. Easier to start with than Airflow. |
-| **API Gateway** | Traefik | K8s-native ingress controller, excellent for routing and service discovery. |
+| **Pipeline Manager** | Prefect | A modern, Python-native workflow orchestrator. |
 | **Message Queue** | RabbitMQ | A mature and reliable message broker for decoupling services in the ETL pipeline. |
 
 ### 3. Service Breakdown
 
-1.  **Web Service:** A Next.js application serving the user interface. This is where the "chat agent" experience will live. It will communicate with the backend via the API Gateway.
-2.  **Query Service:** A FastAPI service providing a REST API for querying the database. It will contain all the business logic for filtering, aggregation, and generating property summaries.
-3.  **Orchestrator (Prefect):** Manages the scheduling of all data collection and processing tasks. It will trigger jobs like "Fetch RETR data monthly" or "Scrape Vilas County tax data weekly".
-4.  **Data Collectors:** A set of services responsible for *extraction*. These are the workers that download bulk data, scrape websites, or connect to future APIs. They will be designed to be modular.
-5.  **Transformation Service:** A service that subscribes to messages from the Data Collectors (via RabbitMQ). It will be responsible for cleaning, normalizing, and linking data before loading it into TimescaleDB.
-6.  **RAG Export Service:** A dedicated service that, when triggered, will query the database (via the Query Service) and generate the structured `.txt` files for LLM analysis.
+1.  **Backend API Service:** A FastAPI service providing REST endpoints for:
+    *   Querying property data.
+    *   **Geospatial Data Ingestion:** `/api/v1/ingest-geodata` endpoint accepts zipped GDB files, extracts them, and loads them into PostGIS.
+    *   Entity Resolution logic.
+2.  **Web Service:** A Next.js application serving the user interface.
+3.  **Entity Resolution Indexer:** A Kubernetes Job (GPU-accelerated) that generates embeddings for property records and indexes them in Qdrant.
+4.  **Orchestrator (Prefect):** Manages the scheduling of data collection tasks.
+5.  **Data Collectors:** Services responsible for scraping and fetching external data.
 
 ### 4. Data Model (TimescaleDB)
-
-We will stick to the event-based model.
 
 *   **Hypertable: `property_events`**
     *   `timestamp` (TIMESTAMPTZ, the hypertable key)
     *   `parcel_id` (TEXT)
     *   `county` (TEXT)
-    *   `event_type` (TEXT, e.g., 'sale', 'tax_status_change', 'owner_change')
-    *   `source` (TEXT, e.g., 'RETR_monthly_zip', 'vilas_county_scraper_v1')
-    *   `data` (JSONB, a flexible field for all event-specific data)
-*   **Standard Table: `parcels`**
+    *   `event_type` (TEXT)
+    *   `source` (TEXT)
+    *   `data` (JSONB)
+*   **Standard Table: `properties`** (Geospatial)
     *   `parcel_id` (TEXT, Primary Key)
-    *   `county` (TEXT)
-    *   Static info like property address, geometry data, etc.
+    *   `geom` (Geometry)
+    *   Static info like property address, owners, tax data.
 
-### 5. Key Concepts & Implementation Details
+### 5. Deployment & Operations
 
-*   **AI-Powered Scraper Modules:**
-    *   We will define a Python `ScraperInterface` class with required methods like `connect()`, `fetch_data()`, and `get_source_name()`.
-    *   Each county-specific scraper will be a separate Python file that implements this interface.
-    *   The Data Collector service will be configured to dynamically load these modules from a specific directory in its container.
-    *   **Your Workflow:** You can use an LLM to generate the Python code for a new scraper. You then save that file, rebuild the Data Collector image, and the new scraper becomes available to the Orchestrator.
+*   **Kubernetes Namespace:** `propfinder`
+*   **Database Migration:** Handled via a dedicated `migration-job` using Alembic.
+*   **Ingestion Workflow:**
+    1.  User uploads `.zip` containing `.gdb` via API.
+    2.  Backend service extracts to temp storage.
+    3.  Backend service parses GDB using `geopandas` and `GDAL`.
+    4.  Data is cleaned and inserted into the `properties` table.
+*   **Entity Resolution Workflow:**
+    1.  `indexer-job` is triggered (manually or via orchestration).
+    2.  Job reads from `properties` table.
+    3.  Generates embeddings on GPU nodes.
+    4.  Upserts vectors to Qdrant.
 
-*   **Cross-Platform Development (M3 ARM -> Xeon x86):**
-    *   This is a solved problem with Docker. We will use `docker buildx` to build multi-platform images (`linux/amd64` and `linux/arm64`). This ensures the images you build on your Mac will run flawlessly on the Xeon Kubernetes cluster.
+### 6. Development Workflow
 
-*   **Backup and Restore:**
-    *   We will create a Kubernetes `CronJob`.
-    *   This job will run a container with `pg_dump` on a schedule (e.g., nightly) to back up the TimescaleDB database.
-    *   The backup files will be stored on a Persistent Volume (PV) or, even better, pushed to an external S3-compatible object store for disaster recovery.
+*   **Local:** Docker Compose for local testing (DB, RabbitMQ).
+*   **Cluster:** `make k8s-apply` to deploy to K3s.
+*   **Images:** Built with `docker buildx` for `linux/amd64` and pushed to private registry.

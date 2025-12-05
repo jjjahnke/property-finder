@@ -1,0 +1,34 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: indexer-job
+  namespace: propfinder
+spec:
+  completions: 4
+  parallelism: 4
+  completionMode: Indexed
+  template:
+    metadata:
+      labels:
+        app: indexer
+    spec:
+      imagePullSecrets:
+      - name: regcred
+      restartPolicy: OnFailure
+      nodeSelector:
+        kubernetes.io/hostname: "gpu-k3s-t-w-01"
+      containers:
+      - name: indexer
+        image: jjjahnke/property-finder-indexer:latest
+        imagePullPolicy: Always
+        resources:
+          limits:
+            nvidia.com/gpu: 1
+        env:
+        - name: TOTAL_SHARDS
+          value: "4"
+        - name: DB_HOST
+          value: "postgres-service"
+        - name: QDRANT_HOST
+          value: "qdrant-service"
+        # JOB_COMPLETION_INDEX is automatically injected by Kubernetes

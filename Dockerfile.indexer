@@ -1,0 +1,20 @@
+FROM python:3.10-slim
+
+WORKDIR /app
+
+# Install system dependencies for psycopg2
+RUN apt-get update && apt-get install -y libpq-dev gcc build-essential gdal-bin libgdal-dev python3-dev && rm -rf /var/lib/apt/lists/*
+
+# Copy requirements (assuming we use the project's main requirements)
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+# Ensure sentence-transformers and qdrant-client are installed (if not in requirements.txt)
+RUN pip install --no-cache-dir sentence-transformers qdrant-client
+
+# Copy the application code
+COPY ingestion/indexer.py .
+COPY app/ app/ 
+# Copy app/ folder just in case we import from it, though indexer.py is self-contained mostly.
+# Actually, indexer.py imports sqlalchemy directly.
+
+CMD ["python", "indexer.py"]

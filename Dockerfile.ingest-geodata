@@ -1,0 +1,31 @@
+FROM python:3.10-slim
+
+WORKDIR /app
+
+# Install system dependencies for geopandas, fiona, and psycopg2
+# These include GDAL, proj, and libpq-dev
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    build-essential \
+    libpq-dev \
+    gcc \
+    gdal-bin \
+    libgdal-dev \
+    libproj-dev \
+    python3-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy requirements.txt and install Python dependencies
+# Use the project's main requirements to ensure consistency
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy the ingestion script and related app code/data (if needed for imports/schema)
+COPY ingest_geodata.py .
+COPY app/ app/ # In case models are imported or other app logic
+
+# The data directory will be mounted as a volume in Kubernetes
+# For local testing, you might copy a smaller dataset if needed.
+
+CMD ["python", "ingest_geodata.py"]
+

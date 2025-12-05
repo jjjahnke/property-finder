@@ -41,6 +41,12 @@ migrate: .venv/bin/activate
 	@echo "Applying database migrations..."
 	./.venv/bin/alembic upgrade head
 
+migrate-k8s: .venv/bin/activate
+	@echo "Waiting for Kubernetes database to start... (via port-forward 5433)"
+	sleep 15
+	@echo "Applying database migrations to Kubernetes..."
+	./.venv/bin/alembic -c alembic_k8s.ini upgrade head
+
 revision: .venv/bin/activate
 	@[ -z "$(m)" ] && echo "Usage: make revision m=\"your migration message\"" && exit 1 || \
 	echo "Creating new migration: $(m)"

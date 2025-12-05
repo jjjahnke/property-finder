@@ -16,3 +16,4 @@ pydantic-settings
 shapely
 pytest
 httpx
+python-multipart

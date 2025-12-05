@@ -1,0 +1,20 @@
+FROM python:3.10-slim
+
+WORKDIR /app
+
+# Install system dependencies for psycopg2
+RUN apt-get update && apt-get install -y libpq-dev gcc && rm -rf /var/lib/apt/lists/*
+
+# Copy requirements and install
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy Alembic config and scripts
+COPY alembic.ini .
+COPY alembic/ alembic/
+
+# Copy application code (needed for env.py imports)
+COPY app/ app/
+
+# Set the command to run migrations
+CMD ["alembic", "upgrade", "head"]

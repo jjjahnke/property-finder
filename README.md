@@ -1,10 +1,10 @@
 # WI-RE Analysis Platform
 
-This project aims to build a platform for analyzing property data, starting with Wisconsin Department of Revenue (RETR) sales data.
+This project builds a platform for analyzing property data, leveraging TimescaleDB for event tracking and Qdrant for entity resolution.
 
 ## Getting Started
 
-To set up the development environment and get the database running, follow these steps:
+### Local Development
 
 1.  **Clone the repository:**
     ```bash
@@ -12,25 +12,50 @@ To set up the development environment and get the database running, follow these
     cd property-finder
     ```
 
-2.  **Set up the Python virtual environment and install dependencies:**
+2.  **Set up the Python virtual environment:**
     ```bash
     make setup
     ```
 
-3.  **Start the Docker services (TimescaleDB, RabbitMQ, Backend):**
-    Ensure Docker Desktop is running.
+3.  **Start Local Services (Docker Compose):**
     ```bash
     make up
     ```
 
-4.  **Apply database migrations:**
+4.  **Apply Migrations:**
     ```bash
     make migrate
     ```
 
-    To create a new migration, use:
+### Kubernetes Deployment (K3s)
+
+1.  **Prerequisites:** A K3s cluster with GPU nodes (optional for backend, required for indexer).
+
+2.  **Deploy Infrastructure:**
     ```bash
-    make revision m="your migration message"
+    make k8s-apply
+    ```
+    This deploys Postgres (TimescaleDB), Qdrant, and the Backend API service to the `propfinder` namespace.
+
+3.  **Run Migrations in Cluster:**
+    A migration job is included in the manifests, but can be triggered manually:
+    ```bash
+    kubectl delete job migration-job -n propfinder
+    kubectl apply -f k8s/migration-job.yaml -n propfinder
     ```
 
-Further instructions will be added here as the project progresses.
+4.  **Access the API:**
+    The backend service is exposed via `LoadBalancer`. Find the URL:
+    ```bash
+    kubectl get service backend-service -n propfinder
+    ```
+    Access documentation at `http://<NODE-IP>:<PORT>/docs`.
+
+### Geospatial Data Ingestion
+
+To ingest parcel data (GDB format):
+
+1.  Zip your `.gdb` directory (e.g., `parcels.zip` containing `MyParcels.gdb`).
+2.  Go to the API Swagger UI (`/docs`).
+3.  Use the `POST /api/v1/ingest-geodata` endpoint to upload the zip file.
+4.  The service will process the file and load it into the database.
