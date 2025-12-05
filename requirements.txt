@@ -11,3 +11,8 @@ geoalchemy2
 requests
 fuzzywuzzy
 python-Levenshtein
+pydantic
+pydantic-settings
+shapely
+pytest
+httpx
