@@ -8,8 +8,12 @@ RUN apt-get update && apt-get install -y libpq-dev gcc build-essential gdal-bin 
 # Copy requirements (assuming we use the project's main requirements)
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
-# Ensure sentence-transformers and qdrant-client are installed (if not in requirements.txt)
-RUN pip install --no-cache-dir sentence-transformers qdrant-client
+
+# Install PyTorch with CUDA 11.8 support for Tesla P100 (Pascal)
+RUN pip install torch==2.0.1 torchvision==0.15.2 torchaudio==2.0.2 --index-url https://download.pytorch.org/whl/cu118
+
+# Install compatible dependencies
+RUN pip install "numpy<2" "transformers==4.38.2" "sentence-transformers==2.7.0" qdrant-client
 
 # Copy the application code
 COPY ingestion/indexer.py .

@@ -17,3 +17,4 @@ shapely
 pytest
 httpx
 python-multipart
+qdrant-client

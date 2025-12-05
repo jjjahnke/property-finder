@@ -24,6 +24,8 @@ spec:
         resources:
           limits:
             nvidia.com/gpu: 1
+            memory: "32Gi"
+            cpu: "4"
         env:
         - name: TOTAL_SHARDS
           value: "4"
