@@ -22,6 +22,9 @@ JOB_COMPLETION_INDEX = int(os.getenv("JOB_COMPLETION_INDEX", "0"))
 COLLECTION_NAME = "parcel_embeddings"
 MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"
 
+# Batch size for Qdrant upserts
+BATCH_SIZE = int(os.getenv("BATCH_SIZE", "1000"))
+
 def get_db_engine():
     """Establishes and returns a SQLAlchemy database engine."""
     db_url = f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
@@ -79,7 +82,7 @@ def get_sharded_parcel_data(engine):
 def main():
     print("Starting Qdrant Indexer...", flush=True)
     db_engine = get_db_engine()
-    qdrant_client = QdrantClient(host=QDRANT_HOST, port=QDRANT_PORT)
+    qdrant_client = QdrantClient(host=QDRANT_HOST, port=QDRANT_PORT, timeout=60.0)
     model = SentenceTransformer(MODEL_NAME)
     
     # Get model's embedding size
@@ -93,13 +96,12 @@ def main():
         return
 
     # Process in chunks to avoid OOM
-    batch_size = 20000
     total_records = len(parcel_data)
-    print(f"Processing {total_records} records in batches of {batch_size}...", flush=True)
+    print(f"Processing {total_records} records in batches of {BATCH_SIZE}...", flush=True)
 
-    for i in range(0, total_records, batch_size):
-        batch = parcel_data[i : i + batch_size]
-        print(f"Processing batch {i // batch_size + 1}/{(total_records + batch_size - 1) // batch_size}...", flush=True)
+    for i in range(0, total_records, BATCH_SIZE):
+        batch = parcel_data[i : i + BATCH_SIZE]
+        print(f"Processing batch {i // BATCH_SIZE + 1}/{(total_records + BATCH_SIZE - 1) // BATCH_SIZE}...", flush=True)
         
         parcel_ids = [item[0] for item in batch]
         texts_to_embed = [item[1] for item in batch]
