@@ -50,6 +50,18 @@ build:
 	@echo "Building Docker images..."
 	docker-compose build
 
+# ==============================================================================
+# Kubernetes
+# ==============================================================================
+
+k8s-apply:
+	@echo "Applying Kubernetes manifests..."
+	kubectl apply -f k8s/
+
+k8s-delete:
+	@echo "Deleting Kubernetes resources..."
+	kubectl delete -f k8s/
+
 ingest-geo:
 	@echo "Running geospatial data ingestion script in Docker..."
 	docker-compose run --rm backend python ingest_geodata.py

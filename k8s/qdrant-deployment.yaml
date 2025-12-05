@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: qdrant
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: qdrant
+  template:
+    metadata:
+      labels:
+        app: qdrant
+    spec:
+      nodeSelector:
+        kubernetes.io/hostname: "gpu-k3s-t-w-01"
+      initContainers:
+      - name: data-loader
+        image: busybox
+        command: ["sh", "-c", "if [ -f /ceph/snapshot ]; then cp -a /ceph/* /ram/; fi"]
+        volumeMounts:
+        - name: ram-disk
+          mountPath: /ram
+        - name: ceph-storage
+          mountPath: /ceph
+      containers:
+      - name: qdrant
+        image: qdrant/qdrant:latest
+        resources:
+          limits:
+            memory: "64Gi"
+        env:
+        - name: QDRANT__STORAGE__ON_DISK_PAYLOAD
+          value: "false"
+        volumeMounts:
+        - name: ram-disk
+          mountPath: /qdrant/storage
+      volumes:
+      - name: ram-disk
+        emptyDir:
+          medium: Memory
+      - name: ceph-storage
+        persistentVolumeClaim:
+          claimName: qdrant-ceph-pvc
