@@ -87,7 +87,17 @@ def main():
     
     # Get model's embedding size
     vector_size = model.get_sentence_embedding_dimension()
-    initialize_qdrant_collection(qdrant_client, vector_size)
+    
+    # Only Shard 0 manages collection creation to avoid race conditions
+    if JOB_COMPLETION_INDEX == 0:
+        initialize_qdrant_collection(qdrant_client, vector_size)
+    else:
+        print(f"Shard {JOB_COMPLETION_INDEX} waiting for collection initialization...", flush=True)
+        # Simple wait loop to ensure collection exists before proceeding
+        # In production, a more robust check loop is better
+        time.sleep(30) 
+        if not qdrant_client.collection_exists(COLLECTION_NAME):
+             print(f"Warning: Collection '{COLLECTION_NAME}' not found after wait. Proceeding anyway, assuming race condition or eventual consistency.", flush=True)
 
     parcel_data = get_sharded_parcel_data(db_engine)
 
@@ -125,7 +135,7 @@ def main():
             wait=True,
             points=points,
         )
-        print(f"Batch {i // batch_size + 1} upsert status: {operation_info.status}", flush=True)
+        print(f"Batch {i // BATCH_SIZE + 1} upsert status: {operation_info.status}", flush=True)
 
     print("Qdrant Indexer finished.", flush=True)
     
